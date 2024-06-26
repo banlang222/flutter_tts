@@ -54,7 +54,7 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
       //response.type=1 播报结束
       if(response.type == 1) {
         if(this.awaitSpeakCompletion && this.speakExtraParams['queueMode'] == 0) {
-          this.ttsEngine?.stop();
+          this.ttsEngine?.stop(); //主动stop，否则连续播报时会发生已合成但不播报但问题
         }
         this.invokeMethod('speak.onComplete', true);
       }

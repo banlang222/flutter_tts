@@ -12,15 +12,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 {
-  "name": "flutter_tts",
-  "version": "1.0.0",
-  "description": "Please describe the basic information.",
-  "main": "Index.ets",
-  "author": "",
-  "license": "",
-  "dependencies": {
-    "@ohos/flutter_ohos": "file:har/flutter.har"
+  "module": {
+    "name": "flutter_tts",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet",
+      "2in1"
+    ]
   }
 }

@@ -54,7 +54,9 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
       //response.type=1 播报结束
       if(response.type == 1) {
         if(this.awaitSpeakCompletion && this.speakExtraParams['queueMode'] == 0) {
-          this.ttsEngine?.stop(); //主动stop，否则连续播报时会发生已合成但不播报但问题
+          this.speaking = false;
+          this.speakResult?.success(1);
+          this.speakResult = null;
         }
         this.invokeMethod('speak.onComplete', true);
       }
@@ -62,11 +64,11 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
     //停止播报
     onStop: (requestId: string, response: textToSpeech.StopResponse): void => {
       this.log(`speak: stop response = ${JSON.stringify(response)}`);
-      if(this.awaitSpeakCompletion) {
-        this.speaking = false;
-      }
-      this.speakCompletion(1);
+      this.speaking = false;
+      this.speakResult?.success(1);
+      this.speakResult = null;
       this.invokeMethod('speak.onCancel', true);
+
       this.log(`speak: stop requestId=${requestId}`);
     },
     //返回音频流，用于将音频流保存到文件，放弃
@@ -81,22 +83,6 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
       this.invokeMethod('speak.onError', `Error from textToSpeech (speak) - ${errorCode}`)
 
     }
-  }
-
-  private sentences:HashMap<string,string> = new HashMap();
-
-  log(text:string) :void {
-    console.debug(`${TAG}: ${text}`);
-  }
-  speakCompletion(success: number) {
-    this.log('speak: completion send success');
-    this.speaking = false;
-    this.speakResult?.success(success);
-    this.speakResult = null;
-  }
-
-  invokeMethod(method:string, args: ESObject):void {
-    this.methodChannel?.invokeMethod(method, args);
   }
 
   getUniqueClassName(): string {
@@ -126,19 +112,24 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
     this.ttsEngine = null;
   }
 
+  log(text:string) :void {
+    console.debug(`${TAG}: ${text}`);
+  }
+
+  invokeMethod(method:string, args: ESObject):void {
+    this.methodChannel?.invokeMethod(method, args);
+  }
+
   onMethodCall(call: MethodCall, result: MethodResult): void {
     this.log(`incoming call : ${JSON.stringify(call)}`)
     if(call.method == 'speak') {
       let text:string = String(call.args);
       if(this.speaking && this.speakExtraParams['queueMode'] == 0) {
-        this.log('queue mode and speaking now')
+        this.log('queue mode and is speaking now')
         result.success(0);
         return;
       }
       if(this.awaitSpeakCompletion && this.speakExtraParams['queueMode']==0) {
-        if(this.ttsEngine?.isBusy()) {
-          this.log('tts engine is busy');
-        }
         this.log('wait completion');
         this.speaking = true;
         this.speakResult = result;
@@ -157,6 +148,7 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
     } else if(call.method == 'getMaxSpeechInputLength') {
       result.success(10000);
     } else if(call.method == 'stop' || call.method == 'pause') {
+      this.speakResult = result;
       this.ttsEngine?.stop();
     } else if(call.method == 'setSpeechRate') {
       let rate:number | null = Number(call.args);
@@ -215,10 +207,7 @@ export default class FlutterTtsPlugin implements FlutterPlugin, MethodCallHandle
   }
 
   speak(text: string) : void {
-  this.log('will speak');
     let id:string = this.randomId();
-    this.sentences.set(id, text);
-    this.log('sentences setted')
     let speakParams: textToSpeech.SpeakParams = {
       requestId: id,
       extraParams: this.speakExtraParams

@@ -5,7 +5,13 @@
 A flutter text to speech plugin (Swift,Kotlin)
 
 ## Features
-
+- [x] ohos
+  - [x] speak
+  - [x] stop
+  - [x] set speech rate (speed)
+  - [x] set speech volume
+  - [x] set pitch
+  - [x] set queue mode
 - [x] Android, iOS, Web, Windows & macOS
   - [x] speak
   - [x] stop
